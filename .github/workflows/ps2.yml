@@ -6,8 +6,20 @@ jobs:
     container: ps2dev/ps2dev
     steps:
       - uses: actions/checkout@v4
-      - run: cd team-battle-arena-3d/ps2-port && make && make iso && ls -lh arena.iso
+      - name: Compilar jogo PS2
+        run: |
+          export PS2SDK=/usr/local/ps2dev/ps2sdk
+          export GSKIT=$PS2SDK/ports
+          export PATH=$PS2SDK/bin:$PS2SDK/ee/bin:/usr/local/ps2dev/bin:$PATH
+          ee-gcc --version
+          cd team-battle-arena-3d/ps2-port
+          make clean && make -j1
+          ls -lh team-battle-arena.elf
+          if command -v mkisofs >/dev/null; then MK=mkisofs; else MK=genisoimage; fi
+          ps2-packer team-battle-arena.elf TBAARENA.ELF || cp team-battle-arena.elf TBAARENA.ELF
+          $MK -o arena.iso SYSTEM.CNF TBAARENA.ELF
+          ls -lh arena.iso TBAARENA.ELF
       - uses: actions/upload-artifact@v4
         with: {name: arena-iso-PS2, path: team-battle-arena-3d/ps2-port/arena.iso}
       - uses: actions/upload-artifact@v4
-        with: {name: TBAARENA-ELF, path: team-battle-arena-3d/ps2-port/team-battle-arena.elf}
+        with: {name: TBAARENA-ELF, path: team-battle-arena-3d/ps2-port/TBAARENA.ELF}
