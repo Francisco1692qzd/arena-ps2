@@ -3,22 +3,24 @@ on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ps2dev/ps2dev
     steps:
       - uses: actions/checkout@v4
+      - name: Pull PS2 toolchain (Docker)
+        run: docker pull ps2dev/ps2dev
       - name: Compilar jogo PS2
         run: |
-          export PS2SDK=/usr/local/ps2dev/ps2sdk
-          export GSKIT=$PS2SDK/ports
-          export PATH=$PS2SDK/bin:$PS2SDK/ee/bin:/usr/local/ps2dev/bin:$PATH
-          ee-gcc --version
-          cd team-battle-arena-3d/ps2-port
-          make clean && make -j1
-          ls -lh team-battle-arena.elf
-          if command -v mkisofs >/dev/null; then MK=mkisofs; else MK=genisoimage; fi
-          ps2-packer team-battle-arena.elf TBAARENA.ELF || cp team-battle-arena.elf TBAARENA.ELF
-          $MK -o arena.iso SYSTEM.CNF TBAARENA.ELF
-          ls -lh arena.iso TBAARENA.ELF
+          docker run --rm -v "${{ github.workspace }}:/build" -w /build ps2dev/ps2dev bash -c "
+            export PS2SDK=/usr/local/ps2dev/ps2sdk
+            export GSKIT=\$PS2SDK/ports
+            export PATH=\$PS2SDK/bin:\$PS2SDK/ee/bin:/usr/local/ps2dev/bin:\$PATH
+            ee-gcc --version
+            cd team-battle-arena-3d/ps2-port
+            make clean && make -j1 && ls -lh team-battle-arena.elf
+            if command -v mkisofs >/dev/null; then MK=mkisofs; else MK=genisoimage; fi
+            ps2-packer team-battle-arena.elf TBAARENA.ELF || cp team-battle-arena.elf TBAARENA.ELF
+            \$MK -o arena.iso SYSTEM.CNF TBAARENA.ELF
+            ls -lh arena.iso
+          "
       - uses: actions/upload-artifact@v4
         with: {name: arena-iso-PS2, path: team-battle-arena-3d/ps2-port/arena.iso}
       - uses: actions/upload-artifact@v4
