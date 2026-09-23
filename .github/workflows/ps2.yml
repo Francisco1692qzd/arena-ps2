@@ -1,0 +1,13 @@
+name: Build PS2 ISO
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ps2dev/ps2dev
+    steps:
+      - uses: actions/checkout@v4
+      - run: cd team-battle-arena-3d/ps2-port && make && make iso && ls -lh arena.iso
+      - uses: actions/upload-artifact@v4
+        with: {name: arena-iso-PS2, path: team-battle-arena-3d/ps2-port/arena.iso}
+      - uses: actions/upload-artifact@v4
+        with: {name: TBAARENA-ELF, path: team-battle-arena-3d/ps2-port/team-battle-arena.elf}
